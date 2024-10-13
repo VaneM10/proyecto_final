@@ -1,0 +1,55 @@
+#version: "3.9"  
+services:
+
+  webserver:
+    build: 
+      context: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - farmacia_api
+    networks:
+      - prod_network
+
+  farmacia_api:
+    build:
+      context: ./APIS
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 256M
+    expose:
+      - "3000-3004:3000"
+    volumes:
+      - ./APIS/Farmacia/:/frm/farmaciaAPI/  
+    depends_on:
+      - db
+    networks:
+      - prod_network
+  db:
+    image: postgres:16
+    shm_size: 128mb
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 2GB
+        reservations:
+          cpus: "0.1"
+          memory: 1GB
+    volumes:
+      - ./pgdata_prod/farmacia:/var/lib/postgresql/data
+    env_file:
+      - ./.env.prod
+    networks:
+      - prod_network
+
+  
+networks:
+  prod_network:
+    driver: bridge
